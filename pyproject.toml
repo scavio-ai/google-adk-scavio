@@ -1,0 +1,28 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "google-adk-scavio"
+version = "0.1.0"
+description = "Scavio real-time search tools (Google, YouTube, Amazon, Walmart, Reddit) for Google ADK (Agent Development Kit)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Scavio", email = "support@scavio.dev" }]
+keywords = ["google-adk", "adk", "agent-development-kit", "agents", "scavio", "search", "serp", "tavily-alternative"]
+dependencies = [
+    "google-adk>=1.0",
+    "scavio>=0.5.0",
+]
+
+[project.urls]
+Homepage = "https://scavio.dev"
+Repository = "https://github.com/scavio-ai/google-adk-scavio"
+Documentation = "https://scavio.dev/docs/google-adk"
+
+[project.optional-dependencies]
+test = ["pytest>=7.0"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["google_adk_scavio"]
