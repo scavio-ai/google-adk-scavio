@@ -80,28 +80,79 @@ def create_scavio_tools(
         tools.append(scavio_google_news)
 
     if enable_youtube:
-        def scavio_youtube_search(query: str, upload_date: Optional[str] = None, type: Optional[str] = None, duration: Optional[str] = None, sort_by: Optional[str] = None) -> dict:
-            """Search YouTube for videos, channels, or playlists. Costs 1 credit.
+        def scavio_youtube_search(query: str, upload_date: Optional[str] = None, type: Optional[str] = None, duration: Optional[str] = None, sort_by: Optional[str] = None, cursor: Optional[str] = None) -> dict:
+            """Search YouTube for videos, channels, or playlists. Costs 2 credits.
 
             Args:
                 query: The video search query.
                 upload_date: Upload date filter: last_hour, today, this_week, this_month, this_year.
-                type: Result type: video, channel, playlist.
+                type: Result type: video, channel, playlist, movie.
                 duration: Duration filter: short, medium, long.
                 sort_by: Sort order: relevance, date, view_count, rating.
+                cursor: Pagination cursor from a previous response.
             """
-            _p = {"upload_date": upload_date, "type": type, "duration": duration, "sort_by": sort_by}
+            _p = {"upload_date": upload_date, "type": type, "duration": duration, "sort_by": sort_by, "cursor": cursor}
             return _run(lambda: client.youtube.search(query, **{k: v for k, v in _p.items() if v is not None}))
         tools.append(scavio_youtube_search)
 
+        def scavio_youtube_video(video_id: str) -> dict:
+            """Fetch full metadata for a YouTube video by id or watch URL. Costs 1 credit.
+
+            Args:
+                video_id: YouTube video id or full watch URL, e.g. dQw4w9WgXcQ.
+            """
+            return _run(lambda: client.youtube.video(video_id))
+        tools.append(scavio_youtube_video)
+
         def scavio_youtube_metadata(video_id: str) -> dict:
-            """Fetch full metadata for a YouTube video by id. Costs 1 credit.
+            """Fetch full metadata for a YouTube video by id. Deprecated alias of scavio_youtube_video. Costs 1 credit.
 
             Args:
                 video_id: YouTube video id, e.g. dQw4w9WgXcQ.
             """
             return _run(lambda: client.youtube.metadata(video_id))
         tools.append(scavio_youtube_metadata)
+
+        def scavio_youtube_comments(video_id: str, cursor: Optional[str] = None) -> dict:
+            """List the top-level comments on a YouTube video. Costs 1 credit.
+
+            Args:
+                video_id: YouTube video id.
+                cursor: Pagination cursor from a previous response.
+            """
+            _p = {"cursor": cursor}
+            return _run(lambda: client.youtube.comments(video_id, **{k: v for k, v in _p.items() if v is not None}))
+        tools.append(scavio_youtube_comments)
+
+        def scavio_youtube_channel(channel_id: str) -> dict:
+            """Fetch details for a YouTube channel by id, @handle, or URL. Costs 1 credit.
+
+            Args:
+                channel_id: YouTube channel id, @handle, or channel URL.
+            """
+            return _run(lambda: client.youtube.channel(channel_id))
+        tools.append(scavio_youtube_channel)
+
+        def scavio_youtube_transcript(video_id: str, language: Optional[str] = None, format: Optional[str] = None) -> dict:
+            """Fetch the transcript or timed subtitles for a YouTube video. Costs 8 credits.
+
+            Args:
+                video_id: YouTube video id.
+                language: Caption language code (default en).
+                format: text for a plain transcript or srt for timed subtitles.
+            """
+            _p = {"language": language, "format": format}
+            return _run(lambda: client.youtube.transcript(video_id, **{k: v for k, v in _p.items() if v is not None}))
+        tools.append(scavio_youtube_transcript)
+
+        def scavio_youtube_streams(video_id: str) -> dict:
+            """Get playable and downloadable stream formats for a YouTube video. Costs 3 credits.
+
+            Args:
+                video_id: YouTube video id.
+            """
+            return _run(lambda: client.youtube.streams(video_id))
+        tools.append(scavio_youtube_streams)
 
     if enable_amazon:
         def scavio_amazon_search(query: str, domain: Optional[str] = None, country: Optional[str] = None, sort_by: Optional[str] = None, start_page: Optional[int] = None) -> dict:

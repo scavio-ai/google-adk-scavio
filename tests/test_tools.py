@@ -12,7 +12,12 @@ ALL_TOOL_NAMES = {
     "scavio_google_search",
     "scavio_google_news",
     "scavio_youtube_search",
+    "scavio_youtube_video",
     "scavio_youtube_metadata",
+    "scavio_youtube_comments",
+    "scavio_youtube_channel",
+    "scavio_youtube_transcript",
+    "scavio_youtube_streams",
     "scavio_amazon_search",
     "scavio_amazon_product",
     "scavio_walmart_search",
@@ -66,7 +71,7 @@ def _get(tools, name):
 def test_all_tools_register(monkeypatch):
     tools = _build(monkeypatch)
     names = [t.__name__ for t in tools]
-    assert len(names) == len(set(names)) == 10
+    assert len(names) == len(set(names)) == 15
     assert set(names) == ALL_TOOL_NAMES
 
 
