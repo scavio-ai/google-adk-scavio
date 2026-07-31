@@ -13,7 +13,7 @@ authors = [{ name = "Scavio", email = "support@scavio.dev" }]
 keywords = ["google-adk", "adk", "agent-development-kit", "agents", "scavio", "search", "serp", "tavily-alternative"]
 dependencies = [
     "google-adk>=1.0",
-    "scavio>=0.5.0",
+    "scavio>=0.12.0",
 ]
 
 [project.urls]

@@ -155,31 +155,44 @@ def create_scavio_tools(
         tools.append(scavio_youtube_streams)
 
     if enable_amazon:
-        def scavio_amazon_search(query: str, domain: Optional[str] = None, country: Optional[str] = None, sort_by: Optional[str] = None, start_page: Optional[int] = None) -> dict:
-            """Search Amazon for products matching a query. Costs 1 credit.
+        # Amazon moved upstream in 2026-07. sort_by is a verified no-op (every
+        # sort value returns the identical unordered set) and start_page was
+        # renamed to page, so both are gone rather than kept as dead params.
+        # domain still works on the wire as a deprecated alias but is not
+        # offered here: a model should see one spelling of a param.
+        def scavio_amazon_search(query: str, country: Optional[str] = None, page: Optional[int] = None) -> dict:
+            """Search Amazon for products matching a query. Costs 1 credit. Results are unsorted and cannot be filtered.
 
             Args:
                 query: The product search query.
-                domain: Amazon domain suffix, e.g. com or co.uk.
-                country: Two-letter country code for localization.
-                sort_by: Sort order: featured, price_low_to_high, price_high_to_low, average_review, most_recent, bestsellers.
-                start_page: First result page to return (1-based).
+                country: Marketplace country code (ISO 3166-1 alpha-2), not a domain: us (default), gb (the UK is gb, not uk), ca, de, fr, es, it, jp, in, au, br, mx, nl, pl, se, sg, ae, sa, eg, cn, be, tr. An unknown code falls back to us.
+                page: Result page, 1-based. One page per call, 1 credit each.
             """
-            _p = {"domain": domain, "country": country, "sort_by": sort_by, "start_page": start_page}
+            _p = {"country": country, "page": page}
             return _run(lambda: client.amazon.search(query, **{k: v for k, v in _p.items() if v is not None}))
         tools.append(scavio_amazon_search)
 
-        def scavio_amazon_product(asin: str, domain: Optional[str] = None, country: Optional[str] = None) -> dict:
-            """Fetch full Amazon product details by ASIN. Costs 1 credit.
+        def scavio_amazon_product(asin: str, country: Optional[str] = None) -> dict:
+            """Fetch full Amazon product details by ASIN. Costs 1 credit. price is the buy-box price only.
 
             Args:
                 asin: Amazon Standard Identification Number, e.g. B09XS7JWHH.
-                domain: Amazon domain suffix, e.g. com or co.uk.
-                country: Two-letter country code for localization.
+                country: Marketplace country code (ISO 3166-1 alpha-2), not a domain: us (default), gb (the UK is gb, not uk), ca, de, fr, es, it, jp, in, au, br, mx, nl, pl, se, sg, ae, sa, eg, cn, be, tr. An unknown code falls back to us.
             """
-            _p = {"domain": domain, "country": country}
+            _p = {"country": country}
             return _run(lambda: client.amazon.product(asin, **{k: v for k, v in _p.items() if v is not None}))
         tools.append(scavio_amazon_product)
+
+        def scavio_amazon_offers(asin: str, country: Optional[str] = None) -> dict:
+            """List every seller offer for an Amazon ASIN: price, seller, condition, shipping, buy box. Costs 1 credit. Page 1 only.
+
+            Args:
+                asin: Amazon Standard Identification Number, e.g. B09XS7JWHH.
+                country: Marketplace country code (ISO 3166-1 alpha-2), not a domain: us (default), gb (the UK is gb, not uk), ca, de, fr, es, it, jp, in, au, br, mx, nl, pl, se, sg, ae, sa, eg, cn, be, tr. An unknown code falls back to us.
+            """
+            _p = {"country": country}
+            return _run(lambda: client.amazon.offers(asin, **{k: v for k, v in _p.items() if v is not None}))
+        tools.append(scavio_amazon_offers)
 
     if enable_walmart:
         def scavio_walmart_search(query: str, sort_by: Optional[str] = None, min_price: Optional[int] = None, max_price: Optional[int] = None, start_page: Optional[int] = None) -> dict:

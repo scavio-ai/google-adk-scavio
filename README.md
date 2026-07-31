@@ -2,6 +2,14 @@
 
 [Scavio](https://scavio.dev) real-time search tools for [Google ADK](https://google.github.io/adk-docs/) (Agent Development Kit) — Google, YouTube, Amazon, Walmart, and Reddit, with one API key.
 
+> **Amazon changed (breaking).** The upstream provider moved in 2026-07:
+> `domain` is replaced by `country`, a two-letter marketplace code (`us`, `gb`
+> -- the UK is `gb`, not `uk` -- `de`, `jp`, ...), and `sort_by`, `pages`,
+> `category_id`, `merchant_id`, `language`, `currency`, `device`, `zip_code`
+> and `autoselect_variant` are gone. The marketplace ignores all of them
+> (`sort_by` returns the identical unordered set for every value), so they are
+> removed rather than kept as silent no-ops. Rank and filter results yourself.
+
 ## Install
 
 ```bash
@@ -50,6 +58,7 @@ tools = create_scavio_tools(
 | `scavio_youtube_metadata` | Full metadata for a video by id | 1 |
 | `scavio_amazon_search` | Amazon product search | 1 |
 | `scavio_amazon_product` | Amazon product details by ASIN | 1 |
+| `scavio_amazon_offers` | Every seller offer for an ASIN, including the buy-box winner | 1 |
 | `scavio_walmart_search` | Walmart product search | 1 |
 | `scavio_walmart_product` | Walmart product details by product id | 1 |
 | `scavio_reddit_search` | Reddit posts or comments search | 2 |
