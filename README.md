@@ -10,6 +10,13 @@
 > (`sort_by` returns the identical unordered set for every value), so they are
 > removed rather than kept as silent no-ops. Rank and filter results yourself.
 
+> **Reddit changed (breaking).** Reddit moved upstream in 2026-07 and now costs
+> **1 credit**, not 2. `scavio_reddit_search` takes `query` and `cursor` only:
+> `type` and `sort` never reached the provider and are gone rather than kept as
+> silent no-ops. `scavio_reddit_post` returns a flat post object and **no
+> comments** -- fetch those from the Reddit comments endpoints via MCP or the
+> `scavio` SDK.
+
 ## Install
 
 ```bash
@@ -54,19 +61,23 @@ tools = create_scavio_tools(
 |---|---|---|
 | `scavio_google_search` | Google web results (organic, knowledge graph, AI overview) | 1 |
 | `scavio_google_news` | Google News articles | 1 |
-| `scavio_youtube_search` | YouTube videos, channels, playlists | 1 |
-| `scavio_youtube_metadata` | Full metadata for a video by id | 1 |
+| `scavio_youtube_search` | YouTube videos, channels, playlists | 2 |
+| `scavio_youtube_video` | Full metadata for a video by id or watch URL | 1 |
+| `scavio_youtube_comments` | Top-level comments on a video | 1 |
+| `scavio_youtube_channel` | Channel details by id, @handle, or URL | 1 |
+| `scavio_youtube_transcript` | Transcript or timed subtitles for a video | 8 |
+| `scavio_youtube_streams` | Playable and downloadable stream formats | 3 |
 | `scavio_amazon_search` | Amazon product search | 1 |
 | `scavio_amazon_product` | Amazon product details by ASIN | 1 |
 | `scavio_amazon_offers` | Every seller offer for an ASIN, including the buy-box winner | 1 |
 | `scavio_walmart_search` | Walmart product search | 1 |
 | `scavio_walmart_product` | Walmart product details by product id | 1 |
-| `scavio_reddit_search` | Reddit posts or comments search | 2 |
-| `scavio_reddit_post` | Reddit post with threaded comments by URL | 2 |
+| `scavio_reddit_search` | Reddit post search (relevance-ordered, no sort or type filter) | 1 |
+| `scavio_reddit_post` | A single Reddit post by URL, as a flat object with no comments | 1 |
 
 ## Use every endpoint via MCP
 
-For the full Scavio API (TikTok, Instagram, Google Maps, Shopping, Trends, and more), point ADK at the hosted MCP server. Requires ADK's MCP extra: `pip install "google-adk[mcp]"`.
+This package is a **curated subset** of the Scavio API, not the whole thing. For full coverage — all 99 endpoints across Google, YouTube, Amazon, Walmart, Reddit, TikTok, TikTok Shop, Instagram, X, and LinkedIn — point ADK at the hosted MCP server at `mcp.scavio.dev`, which exposes 99 tools. Requires ADK's MCP extra: `pip install "google-adk[mcp]"`.
 
 ```python
 from google.adk.agents import Agent

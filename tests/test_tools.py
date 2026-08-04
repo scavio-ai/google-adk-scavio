@@ -13,7 +13,6 @@ ALL_TOOL_NAMES = {
     "scavio_google_news",
     "scavio_youtube_search",
     "scavio_youtube_video",
-    "scavio_youtube_metadata",
     "scavio_youtube_comments",
     "scavio_youtube_channel",
     "scavio_youtube_transcript",
@@ -72,8 +71,15 @@ def _get(tools, name):
 def test_all_tools_register(monkeypatch):
     tools = _build(monkeypatch)
     names = [t.__name__ for t in tools]
-    assert len(names) == len(set(names)) == 16
+    assert len(names) == len(set(names)) == 15
     assert set(names) == ALL_TOOL_NAMES
+
+
+def test_deprecated_youtube_metadata_alias_not_registered(monkeypatch):
+    """/youtube/metadata is a deprecated alias of /youtube/video, not a peer tool."""
+    names = {t.__name__ for t in _build(monkeypatch)}
+    assert "scavio_youtube_metadata" not in names
+    assert "scavio_youtube_video" in names
 
 
 def test_provider_gating(monkeypatch):
@@ -117,6 +123,32 @@ def test_amazon_product_uses_asin(monkeypatch):
     out = p("B000000000")
     assert out["method"] == "product"
     assert out["args"] == ("B000000000",)
+
+
+def test_reddit_search_only_takes_query_and_cursor(monkeypatch):
+    """/reddit/search accepts query + cursor only; type and sort do not exist."""
+    import inspect
+
+    r = _get(_build(monkeypatch), "scavio_reddit_search")
+    assert set(inspect.signature(r).parameters) == {"query", "cursor"}
+    out = r("serpapi alternative", cursor="t3_abc")
+    assert out["method"] == "search"
+    assert out["args"] == ("serpapi alternative",)
+    assert out["kwargs"] == {"cursor": "t3_abc"}
+
+
+def test_reddit_tools_priced_at_one_credit(monkeypatch):
+    """Reddit dropped from 2 credits to 1 when it moved to TikHub."""
+    tools = _build(monkeypatch)
+    for name in ("scavio_reddit_search", "scavio_reddit_post"):
+        doc = _get(tools, name).__doc__
+        assert "Costs 1 credit." in doc
+        assert "2 credits" not in doc
+
+
+def test_youtube_search_priced_at_two_credits(monkeypatch):
+    doc = _get(_build(monkeypatch), "scavio_youtube_search").__doc__
+    assert "Costs 2 credits." in doc
 
 
 def test_errors_wrapped_not_raised(monkeypatch):

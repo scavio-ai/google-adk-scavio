@@ -104,14 +104,9 @@ def create_scavio_tools(
             return _run(lambda: client.youtube.video(video_id))
         tools.append(scavio_youtube_video)
 
-        def scavio_youtube_metadata(video_id: str) -> dict:
-            """Fetch full metadata for a YouTube video by id. Deprecated alias of scavio_youtube_video. Costs 1 credit.
-
-            Args:
-                video_id: YouTube video id, e.g. dQw4w9WgXcQ.
-            """
-            return _run(lambda: client.youtube.metadata(video_id))
-        tools.append(scavio_youtube_metadata)
+        # /youtube/metadata is a deprecated alias of /youtube/video; it is not
+        # registered as a peer tool so a model never has to pick between two
+        # identical endpoints. Call client.youtube.metadata() directly if needed.
 
         def scavio_youtube_comments(video_id: str, cursor: Optional[str] = None) -> dict:
             """List the top-level comments on a YouTube video. Costs 1 credit.
@@ -219,20 +214,23 @@ def create_scavio_tools(
         tools.append(scavio_walmart_product)
 
     if enable_reddit:
-        def scavio_reddit_search(query: str, type: Optional[str] = None, sort: Optional[str] = None) -> dict:
-            """Search Reddit posts or comments. Costs 2 credits.
+        # Reddit moved upstream in 2026-07: 1 credit, not 2. /reddit/search
+        # takes query + cursor only. type and sort never reached the provider,
+        # so a model that set them believed it had filtered when it had not;
+        # they are removed rather than kept as silent no-ops.
+        def scavio_reddit_search(query: str, cursor: Optional[str] = None) -> dict:
+            """Search Reddit posts. Costs 1 credit. Results are relevance-ordered and cannot be sorted or filtered by type.
 
             Args:
                 query: The Reddit search query.
-                type: Result type: posts or comments.
-                sort: Sort order: relevance, new, hot, top, comments.
+                cursor: Pagination cursor: the next_cursor of a previous response.
             """
-            _p = {"type": type, "sort": sort}
+            _p = {"cursor": cursor}
             return _run(lambda: client.reddit.search(query, **{k: v for k, v in _p.items() if v is not None}))
         tools.append(scavio_reddit_search)
 
         def scavio_reddit_post(url: str) -> dict:
-            """Fetch a Reddit post and its threaded comments by URL. Costs 2 credits.
+            """Fetch a single Reddit post by URL as a flat post object. Costs 1 credit. Returns no comments: use the Reddit comments endpoints for those.
 
             Args:
                 url: Full URL of the Reddit post.
