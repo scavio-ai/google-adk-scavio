@@ -1,4 +1,4 @@
-"""Scavio search tools for Google ADK (Agent Development Kit).
+"""Scavio search and page-extraction tools for Google ADK (Agent Development Kit).
 
 Build the tools with `create_scavio_tools()` and pass them to an ADK Agent:
 
@@ -32,6 +32,7 @@ def _run(call: Callable[[], Dict[str, Any]]) -> Dict[str, Any]:
 def create_scavio_tools(
     api_key: Optional[str] = None,
     *,
+    enable_extract: bool = True,
     enable_google: bool = True,
     enable_youtube: bool = True,
     enable_amazon: bool = True,
@@ -42,6 +43,9 @@ def create_scavio_tools(
 
     Args:
         api_key: Scavio API key. Falls back to the SCAVIO_API_KEY env var.
+        enable_extract: Register the read-any-URL tool. Defaults to True. Unlike
+            the flags below it gates no platform: ``extract`` is a core endpoint
+            that works on any URL.
         enable_google: Register the Google tools. Defaults to True.
         enable_youtube: Register the YouTube tools. Defaults to True.
         enable_amazon: Register the Amazon tools. Defaults to True.
@@ -53,6 +57,23 @@ def create_scavio_tools(
     """
     client = ScavioClient(api_key=api_key or os.getenv("SCAVIO_API_KEY"))
     tools: list = []
+
+    if enable_extract:
+        # Registered first on purpose: extract is the read-this-page primitive an
+        # agent reaches for most, and the only tool here tied to no platform.
+        # `extract` is a TOP-LEVEL method on the client, never a namespace --
+        # client.extract(url), not client.extract.extract().
+        def scavio_extract(url: str, format: Optional[str] = None, mode: Optional[str] = None) -> dict:
+            """Read any web page and return it as clean Markdown, plain text, or raw HTML. Costs 1 credit on normal and advanced, 2 on ultra, and only a successful read is billed.
+
+            Args:
+                url: The page to read (1-2048 characters). http(s) only; a bare host is upgraded to https, and loopback, private, link-local and metadata hosts are rejected.
+                format: Output format: markdown (the default) is a readability extraction with the page chrome stripped, text is that flattened to plain text, html is the raw page.
+                mode: Fetch tier, and the parameter that sets the price: normal (the default) is a plain fetch and costs 1 credit, advanced renders the page in a browser for JS-built sites and costs 1, ultra routes through residential proxies for the hardest bot walls and costs 2. Start on normal.
+            """
+            _p = {"format": format, "mode": mode}
+            return _run(lambda: client.extract(url, **{k: v for k, v in _p.items() if v is not None}))
+        tools.append(scavio_extract)
 
     if enable_google:
         def scavio_google_search(query: str, gl: Optional[str] = None, hl: Optional[str] = None) -> dict:

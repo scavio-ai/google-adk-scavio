@@ -1,6 +1,6 @@
 # google-adk-scavio
 
-[Scavio](https://scavio.dev) real-time search tools for [Google ADK](https://google.github.io/adk-docs/) (Agent Development Kit) — Google, YouTube, Amazon, Walmart, and Reddit, with one API key.
+[Scavio](https://scavio.dev) real-time search and page-extraction tools for [Google ADK](https://google.github.io/adk-docs/) (Agent Development Kit) — Google, YouTube, Amazon, Walmart, Reddit, and `scavio_extract` (read any URL), with one API key.
 
 > **Amazon changed (breaking).** The upstream provider moved in 2026-07:
 > `domain` is replaced by `country`, a two-letter marketplace code (`us`, `gb`
@@ -41,10 +41,11 @@ root_agent = Agent(
 )
 ```
 
-Expose only the providers you need:
+Expose only the tools you need:
 
 ```python
 tools = create_scavio_tools(
+    enable_extract=True,
     enable_google=True,
     enable_reddit=True,
     enable_youtube=False,
@@ -53,12 +54,16 @@ tools = create_scavio_tools(
 )
 ```
 
+`enable_extract` is the odd flag out: every other flag gates a platform, while
+`scavio_extract` is a core endpoint that reads any URL and belongs to none.
+
 ## Tools
 
 `create_scavio_tools()` returns plain typed Python functions; ADK wraps each one in a `FunctionTool` automatically. Each returns the structured Scavio JSON response as a dict; errors come back as `{"error": "..."}` rather than raising, so a failed call never crashes the run.
 
 | Tool | Description | Credits |
 |---|---|---|
+| `scavio_extract` | Read any URL as Markdown, plain text, or raw HTML *(core endpoint, not a platform)* | 1 / 1 / 2 by `mode` |
 | `scavio_google_search` | Google web results (organic, knowledge graph, AI overview) | 1 |
 | `scavio_google_news` | Google News articles | 1 |
 | `scavio_youtube_search` | YouTube videos, channels, playlists | 2 |
@@ -75,9 +80,26 @@ tools = create_scavio_tools(
 | `scavio_reddit_search` | Reddit post search (relevance-ordered, no sort or type filter) | 1 |
 | `scavio_reddit_post` | A single Reddit post by URL, as a flat object with no comments | 1 |
 
+### Reading a page
+
+`scavio_extract` is the one tool here that is not tied to a platform: give it any
+URL and it returns the page as `data.content`, alongside `data.url`,
+`data.format`, `data.mode` and `data.content_length`.
+
+Its price is a function of `mode`, not a per-call constant. `normal` (the
+default) is a plain fetch and costs **1** credit, `advanced` renders the page in
+a browser for JS-built sites and costs **1**, and `ultra` routes through
+residential proxies for the hardest bot walls and costs **2**. Start on `normal`.
+Only a successful read is billed — a dead link, a bot wall or a timeout costs
+nothing. See [the extract docs](https://scavio.dev/docs/extract).
+
+`format` picks the shape: `markdown` (the default) is a readability extraction
+with the page chrome stripped, `text` is that flattened to plain text, and `html`
+is the raw page.
+
 ## Use every endpoint via MCP
 
-This package is a **curated subset** of the Scavio API, not the whole thing. For full coverage — all 99 endpoints across Google, YouTube, Amazon, Walmart, Reddit, TikTok, TikTok Shop, Instagram, X, and LinkedIn — point ADK at the hosted MCP server at `mcp.scavio.dev`, which exposes 99 tools. Requires ADK's MCP extra: `pip install "google-adk[mcp]"`.
+This package is a **curated subset** of the Scavio API, not the whole thing: 16 tools — 15 across 5 platforms, plus the core `extract` endpoint. For full coverage — all 195 endpoints across 31 platforms (Google, YouTube, Amazon, Walmart, Reddit, TikTok, TikTok Shop, Instagram, X, LinkedIn, eBay, Target, Home Depot, Zillow, Redfin, Booking, Airbnb, Tripadvisor, Yelp, Indeed, Glassdoor, the App Store, Google Play, SEC, Companies House, G2, Capterra, Google Ads, Meta Ad Library, Threads and Kuaishou) — point ADK at the hosted MCP server at `mcp.scavio.dev`, which exposes 191 tools. Requires ADK's MCP extra: `pip install "google-adk[mcp]"`.
 
 ```python
 from google.adk.agents import Agent
