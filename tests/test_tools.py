@@ -196,7 +196,7 @@ def test_reddit_search_only_takes_query_and_cursor(monkeypatch):
 
 
 def test_reddit_tools_priced_at_one_credit(monkeypatch):
-    """Reddit dropped from 2 credits to 1 when it moved to TikHub."""
+    """Reddit dropped from 2 credits to 1 when it moved to its current upstream source."""
     tools = _build(monkeypatch)
     for name in ("scavio_reddit_search", "scavio_reddit_post"):
         doc = _get(tools, name).__doc__
