@@ -194,7 +194,7 @@ def create_scavio_tools(
         tools.append(scavio_youtube_channel)
 
         def scavio_youtube_transcript(video_id: str, language: Optional[str] = None, format: Optional[str] = None) -> dict:
-            """Fetch the transcript or timed subtitles for a YouTube video. Costs 8 credits.
+            """Fetch the transcript or timed subtitles for a YouTube video. Costs 5 credits.
 
             Args:
                 video_id: YouTube video id.

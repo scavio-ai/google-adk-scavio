@@ -77,7 +77,7 @@ website tools.
 | `scavio_youtube_video` | Full metadata for a video by id or watch URL | 1 |
 | `scavio_youtube_comments` | Top-level comments on a video | 1 |
 | `scavio_youtube_channel` | Channel details by id, @handle, or URL | 1 |
-| `scavio_youtube_transcript` | Transcript or timed subtitles for a video | 8 |
+| `scavio_youtube_transcript` | Transcript or timed subtitles for a video | 5 |
 | `scavio_youtube_streams` | Playable and downloadable stream formats | 3 |
 | `scavio_amazon_search` | Amazon product search | 1 |
 | `scavio_amazon_product` | Amazon product details by ASIN | 1 |
