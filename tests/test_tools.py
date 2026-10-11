@@ -46,12 +46,23 @@ class _FakeClient:
         for ns in ("google", "youtube", "amazon", "walmart", "reddit"):
             setattr(self, ns, _Recorder(self.calls))
 
-    # extract is a TOP-LEVEL method on the client, never a namespace:
-    # client.extract(url), never client.extract.extract(). A tool calling the
-    # latter would blow up here, which is the point.
-    def extract(self, url, **kwargs):
-        self.calls.append(("extract", (url,), kwargs))
+        # client.extract is a CALLABLE namespace (scavio>=0.23): calling it reads
+        # one page, and its attributes are map / crawl / crawl_status / batch /
+        # batch_status. client.extract.extract() would record "extract.extract".
+        self.extract = _FakeExtract(self.calls)
+
+
+class _FakeExtract(_Recorder):
+    def __call__(self, url, **kwargs):
+        self._calls.append(("extract", (url,), kwargs))
         return {"ok": True, "method": "extract", "args": (url,), "kwargs": kwargs}
+
+    def __getattr__(self, method):
+        def _call(*args, **kwargs):
+            self._calls.append(("extract." + method, args, kwargs))
+            return {"ok": True, "method": "extract." + method, "args": args, "kwargs": kwargs}
+
+        return _call
 
 
 class _RaisingClient:
@@ -66,8 +77,10 @@ class _RaisingClient:
         for ns in ("google", "youtube", "amazon", "walmart", "reddit"):
             setattr(self, ns, _Boom())
 
-    def extract(self, url, **kwargs):
-        raise RuntimeError("scavio exploded")
+        def _extract(url, **kwargs):
+            raise RuntimeError("scavio exploded")
+
+        self.extract = _extract
 
 
 def _build(monkeypatch, **kwargs):
@@ -227,7 +240,7 @@ def test_package_version_matches_pyproject():
 
     pyproject = (pathlib.Path(__file__).resolve().parents[1] / "pyproject.toml").read_text()
     declared = re.search(r'^version = "([^"]+)"', pyproject, re.M).group(1)
-    assert google_adk_scavio.__version__ == declared == "0.3.0"
+    assert google_adk_scavio.__version__ == declared == "0.4.0"
 
 
 def test_adk_function_tool_wraps(monkeypatch):
@@ -257,3 +270,142 @@ def test_live_google_search():
     first = out["organic_results"][0]
     assert first["link"].startswith("http")
     assert first["title"]
+
+
+# --------------------------------------------------------------------------- #
+# Map, crawl and batch (enable_crawl, opt-in)
+# --------------------------------------------------------------------------- #
+
+CRAWL_TOOL_NAMES = {
+    "scavio_map_website",
+    "scavio_crawl_website",
+    "scavio_crawl_status",
+    "scavio_batch_extract",
+    "scavio_batch_status",
+}
+JOB_ID = "crawl_01a12d21-fb42-7000-88cf-6887f653ee5d"
+
+
+class _JobClient(_FakeClient):
+    """Crawl/batch jobs that move through scripted statuses."""
+
+    def __init__(self, statuses=("running", "completed")):
+        super().__init__()
+        script = iter(statuses)
+        calls = self.calls
+
+        class _Ext(_FakeExtract):
+            def crawl(self, url, **kwargs):
+                calls.append(("extract.crawl", (url,), kwargs))
+                return {"data": {"id": JOB_ID, "status": "queued"}}
+
+            def batch(self, urls, **kwargs):
+                calls.append(("extract.batch", (urls,), kwargs))
+                return {"data": {"id": JOB_ID, "status": "queued"}}
+
+            def crawl_status(self, job_id, **kwargs):
+                calls.append(("extract.crawl_status", (job_id,), kwargs))
+                return {"data": {"id": job_id, "status": next(script, "completed"), "results": []}}
+
+            def batch_status(self, job_id, **kwargs):
+                calls.append(("extract.batch_status", (job_id,), kwargs))
+                return {"data": {"id": job_id, "status": next(script, "completed"), "results": []}}
+
+        self.extract = _Ext(calls)
+
+
+def _crawl_tools(monkeypatch, client):
+    monkeypatch.setattr(tools_mod, "ScavioClient", lambda *a, **k: client)
+    monkeypatch.setattr(tools_mod, "WEB_JOB_POLL_INTERVAL", 0.0)
+    tools = create_scavio_tools(
+        api_key="test", enable_extract=False, enable_google=False, enable_youtube=False,
+        enable_amazon=False, enable_walmart=False, enable_reddit=False, enable_crawl=True,
+    )
+    return {t.__name__: t for t in tools}
+
+
+def test_crawl_tools_are_opt_in(monkeypatch):
+    names = {t.__name__ for t in _build(monkeypatch)}
+    assert not names & CRAWL_TOOL_NAMES
+    assert set(_crawl_tools(monkeypatch, _JobClient())) == CRAWL_TOOL_NAMES
+
+
+def test_map_calls_extract_map(monkeypatch):
+    client = _FakeClient()
+    tools = _crawl_tools(monkeypatch, client)
+    out = tools["scavio_map_website"]("scavio.dev", limit=5, include_paths=["/blog/**"])
+    assert out["method"] == "extract.map"
+    assert out["args"] == ("scavio.dev",)
+    assert out["kwargs"] == {"limit": 5, "include_paths": ["/blog/**"]}
+
+
+def test_crawl_waits_until_completed_then_reads_results(monkeypatch):
+    client = _JobClient()
+    tools = _crawl_tools(monkeypatch, client)
+    out = tools["scavio_crawl_website"]("https://hono.dev/docs", max_pages=3, limit=5)
+    assert out["data"]["status"] == "completed"
+    assert client.calls[0] == ("extract.crawl", ("https://hono.dev/docs",), {"max_pages": 3})
+    assert client.calls[1] == ("extract.crawl_status", (JOB_ID,), {"limit": 1, "include_content": False})
+    assert client.calls[-1] == ("extract.crawl_status", (JOB_ID,), {"limit": 5})
+
+
+def test_crawl_wait_zero_returns_the_queued_job(monkeypatch):
+    client = _JobClient()
+    tools = _crawl_tools(monkeypatch, client)
+    out = tools["scavio_crawl_website"]("https://hono.dev/docs", wait_seconds=0)
+    assert out["data"]["status"] == "queued"
+    assert len(client.calls) == 1
+
+
+def test_crawl_still_running_when_the_wait_ends(monkeypatch):
+    client = _JobClient(statuses=["running"] * 100)
+    tools = _crawl_tools(monkeypatch, client)
+    ticks = iter(range(0, 10_000, 10))
+    monkeypatch.setattr(tools_mod.time, "monotonic", lambda: float(next(ticks)))
+    out = tools["scavio_crawl_website"]("https://hono.dev/docs", wait_seconds=5)
+    assert out["data"]["status"] == "running"
+    assert out["data"]["id"] == JOB_ID
+
+
+def test_batch_and_status_tools(monkeypatch):
+    client = _JobClient()
+    tools = _crawl_tools(monkeypatch, client)
+    out = tools["scavio_batch_extract"](["https://example.com/"], mode="normal")
+    assert out["data"]["status"] == "completed"
+    assert client.calls[0] == ("extract.batch", (["https://example.com/"],), {"mode": "normal"})
+    tools["scavio_crawl_status"]("crawl_1", cursor="25", include_content=False)
+    assert client.calls[-1] == ("extract.crawl_status", ("crawl_1",), {"cursor": "25", "limit": 10, "include_content": False})
+    tools["scavio_batch_status"]("batch_1", status="failed")
+    assert client.calls[-1] == ("extract.batch_status", ("batch_1",), {"limit": 10, "status": "failed"})
+
+
+def test_crawl_tools_match_the_real_sdk_signatures():
+    import inspect
+
+    from scavio import ScavioClient
+
+    ext = ScavioClient(api_key="test").extract
+    expected = {
+        "map": {"url", "search", "limit", "sitemap", "include_subdomains", "include_paths", "exclude_paths", "mode"},
+        "crawl": {"url", "max_pages", "max_depth", "include_paths", "exclude_paths", "format", "mode"},
+        "crawl_status": {"job_id", "cursor", "limit", "status", "include_content"},
+        "batch": {"urls", "format", "mode"},
+        "batch_status": {"job_id", "cursor", "limit", "status", "include_content"},
+    }
+    for method, params in expected.items():
+        accepted = set(inspect.signature(getattr(ext, method)).parameters)
+        assert params <= accepted, (method, params - accepted)
+
+
+def test_crawl_tools_wrap_as_adk_function_tools_and_state_prices(monkeypatch):
+    from google.adk.tools import FunctionTool
+
+    tools = _crawl_tools(monkeypatch, _JobClient())
+    tools["scavio_extract"] = _get(_build(monkeypatch), "scavio_extract")
+    for name, fn in tools.items():
+        wrapped = FunctionTool(fn)
+        assert wrapped.name == name
+        doc = fn.__doc__.lower()
+        assert "credit" in doc, name
+        for word in ("proxy", "residential", "datacenter", "headless", "browser"):
+            assert word not in doc, (name, word)

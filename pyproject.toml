@@ -4,16 +4,16 @@ build-backend = "hatchling.build"
 
 [project]
 name = "google-adk-scavio"
-version = "0.3.0"
-description = "Scavio real-time search and URL extraction tools (Google, YouTube, Amazon, Walmart, Reddit, extract) for Google ADK (Agent Development Kit)"
+version = "0.4.0"
+description = "Scavio real-time search, URL extraction and website crawl tools (Google, YouTube, Amazon, Walmart, Reddit, extract, map, crawl, batch) for Google ADK (Agent Development Kit)"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [{ name = "Scavio", email = "support@scavio.dev" }]
-keywords = ["google-adk", "adk", "agent-development-kit", "agents", "scavio", "search", "serp", "extract", "web-scraping", "tavily-alternative"]
+keywords = ["google-adk", "adk", "agent-development-kit", "agents", "scavio", "search", "serp", "extract", "web-crawler", "sitemap", "web-scraping", "tavily-alternative"]
 dependencies = [
     "google-adk>=1.0",
-    "scavio>=0.15.0",
+    "scavio>=0.23.0",
 ]
 
 [project.urls]

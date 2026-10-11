@@ -3,4 +3,4 @@
 from .tools import create_scavio_tools
 
 __all__ = ["create_scavio_tools"]
-__version__ = "0.3.0"
+__version__ = "0.4.0"
