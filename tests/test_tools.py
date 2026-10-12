@@ -240,7 +240,7 @@ def test_package_version_matches_pyproject():
 
     pyproject = (pathlib.Path(__file__).resolve().parents[1] / "pyproject.toml").read_text()
     declared = re.search(r'^version = "([^"]+)"', pyproject, re.M).group(1)
-    assert google_adk_scavio.__version__ == declared == "0.4.1"
+    assert google_adk_scavio.__version__ == declared == "0.4.2"
 
 
 def test_adk_function_tool_wraps(monkeypatch):

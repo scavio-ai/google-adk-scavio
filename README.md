@@ -7,7 +7,7 @@
 > `scavio_batch_extract` and `scavio_batch_status`. Requires `scavio>=0.23.0`.
 > See [Map, crawl and batch](#map-crawl-and-batch).
 
-> **Amazon changed (breaking).** The upstream provider moved in 2026-07:
+> **Amazon changed (breaking).** The Amazon endpoint changed in 2026-07:
 > `domain` is replaced by `country`, a two-letter marketplace code (`us`, `gb`
 > -- the UK is `gb`, not `uk` -- `de`, `jp`, ...), and `sort_by`, `pages`,
 > `category_id`, `merchant_id`, `language`, `currency`, `device`, `zip_code`
