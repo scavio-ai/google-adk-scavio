@@ -1,6 +1,6 @@
 # google-adk-scavio
 
-[Scavio](https://scavio.dev) real-time search and page-extraction tools for [Google ADK](https://google.github.io/adk-docs/) (Agent Development Kit) — Google, YouTube, Amazon, Walmart, Reddit, `scavio_extract` (read any URL), and opt-in website tools that map, crawl and batch-extract whole sites, with one API key.
+[Scavio](https://scavio.dev) real-time search and page-extraction tools for [Google ADK](https://google.github.io/adk-docs/) (Agent Development Kit) — Google, YouTube, Amazon, Walmart, HEB, Kroger, Reddit, `scavio_extract` (read any URL), and opt-in website tools that map, crawl and batch-extract whole sites, with one API key.
 
 > **New in 0.4.0: map, crawl and batch (opt-in).** `create_scavio_tools(enable_crawl=True)`
 > adds `scavio_map_website`, `scavio_crawl_website`, `scavio_crawl_status`,
@@ -56,6 +56,8 @@ tools = create_scavio_tools(
     enable_youtube=False,
     enable_amazon=False,
     enable_walmart=False,
+    enable_heb=False,
+    enable_kroger=False,
 )
 ```
 
@@ -84,6 +86,11 @@ website tools.
 | `scavio_amazon_offers` | Every seller offer for an ASIN, including the buy-box winner | 1 |
 | `scavio_walmart_search` | Walmart product search | 1 |
 | `scavio_walmart_product` | Walmart product details by product id | 1 |
+| `scavio_heb_search` | HEB grocery product search | 2 |
+| `scavio_heb_product` | HEB product detail (nutrition, ingredients, coupons, EBT/SNAP) | 2 |
+| `scavio_heb_stores` | HEB store locations by ZIP or city | 2 |
+| `scavio_kroger_search` | Kroger grocery product search (all Kroger banners) | 2 |
+| `scavio_kroger_product` | Kroger product detail (nutrition, allergens, stock) | 2 |
 | `scavio_reddit_search` | Reddit post search (relevance-ordered, no sort or type filter) | 1 |
 | `scavio_reddit_post` | A single Reddit post by URL, as a flat object with no comments | 1 |
 | `scavio_map_website` | A site's page URLs from its sitemaps and start page *(`enable_crawl`)* | 1 on normal (up to 2 advanced, 10 ultra) |
@@ -153,7 +160,7 @@ as agent tools.
 
 ## Use every endpoint via MCP
 
-This package is a **curated subset** of the Scavio API, not the whole thing: 21 tools — 15 across 5 platforms, plus the core `extract` endpoint and the 5 opt-in website tools. For full coverage — all 195 endpoints across 31 platforms (Google, YouTube, Amazon, Walmart, Reddit, TikTok, TikTok Shop, Instagram, X, LinkedIn, eBay, Target, Home Depot, Zillow, Redfin, Booking, Airbnb, Tripadvisor, Yelp, Indeed, Glassdoor, the App Store, Google Play, SEC, Companies House, G2, Capterra, Google Ads, Meta Ad Library, Threads and Kuaishou) — point ADK at the hosted MCP server at `mcp.scavio.dev`, which exposes 191 tools. Requires ADK's MCP extra: `pip install "google-adk[mcp]"`.
+This package is a **curated subset** of the Scavio API, not the whole thing: 26 tools — 20 across 7 platforms, plus the core `extract` endpoint and the 5 opt-in website tools. For full coverage — all 200+ endpoints across 33 platforms (Google, YouTube, Amazon, Walmart, HEB, Kroger, Reddit, TikTok, TikTok Shop, Instagram, X, LinkedIn, eBay, Target, Home Depot, Zillow, Redfin, Booking, Airbnb, Tripadvisor, Yelp, Indeed, Glassdoor, the App Store, Google Play, SEC, Companies House, G2, Capterra, Google Ads, Meta Ad Library, Threads and Kuaishou) — point ADK at the hosted MCP server at `mcp.scavio.dev`, which exposes 191 tools. Requires ADK's MCP extra: `pip install "google-adk[mcp]"`.
 
 ```python
 from google.adk.agents import Agent
