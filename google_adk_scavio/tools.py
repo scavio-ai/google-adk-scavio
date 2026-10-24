@@ -77,6 +77,8 @@ def create_scavio_tools(
     enable_youtube: bool = True,
     enable_amazon: bool = True,
     enable_walmart: bool = True,
+    enable_heb: bool = True,
+    enable_kroger: bool = True,
     enable_reddit: bool = True,
     enable_crawl: bool = False,
 ) -> list:
@@ -91,6 +93,8 @@ def create_scavio_tools(
         enable_youtube: Register the YouTube tools. Defaults to True.
         enable_amazon: Register the Amazon tools. Defaults to True.
         enable_walmart: Register the Walmart tools. Defaults to True.
+        enable_heb: Register the HEB tools (3). Defaults to True.
+        enable_kroger: Register the Kroger tools (2). Defaults to True.
         enable_reddit: Register the Reddit tools. Defaults to True.
         enable_crawl: Register the 5 website tools (map, crawl, crawl status,
             batch extract, batch status). OPT-IN, defaults to False, because a
@@ -277,6 +281,66 @@ def create_scavio_tools(
             """
             return _run(lambda: client.walmart.product(product_id))
         tools.append(scavio_walmart_product)
+
+    if enable_heb:
+        def scavio_heb_search(query: str, page: Optional[int] = None, page_size: Optional[int] = None) -> dict:
+            """Search HEB grocery products by keyword: price (cents), sale status, unit price, size, UPC, stock, EBT/SNAP eligibility, aisle location and product URL. Costs 2 credits.
+
+            Args:
+                query: Search keywords (1-200 characters).
+                page: Results page, 1-based (1-100).
+                page_size: Results per page (1-60; server default 30).
+            """
+            _p = {"page": page, "page_size": page_size}
+            return _run(lambda: client.heb.search(query, **{k: v for k, v in _p.items() if v is not None}))
+        tools.append(scavio_heb_search)
+
+        def scavio_heb_product(product_url: Optional[str] = None, product_id: Optional[str] = None, slug: Optional[str] = None) -> dict:
+            """Full HEB product detail: nutrition facts, ingredients, description, images, similar products, coupons, EBT/SNAP eligibility and breadcrumbs. Pass product_url (from search) or slug + product_id. Costs 2 credits.
+
+            Args:
+                product_url: Full or relative product URL from heb.com (e.g. '/product-detail/central-market-organics-whole-milk-1-gal/931316'). Preferred.
+                product_id: HEB product id (numeric id at the end of a product URL). Requires slug.
+                slug: Product slug (readable part of the URL). Required with product_id.
+            """
+            _p = {"product_url": product_url, "product_id": product_id, "slug": slug}
+            return _run(lambda: client.heb.product(**{k: v for k, v in _p.items() if v is not None}))
+        tools.append(scavio_heb_product)
+
+        def scavio_heb_stores(zip: Optional[str] = None, city: Optional[str] = None) -> dict:
+            """HEB stores near a US ZIP code or city: store number, address, phone, hours, pharmacy availability, fulfillment channels, distance and store URL. Costs 2 credits.
+
+            Args:
+                zip: 5-digit US ZIP code (e.g. '78701').
+                city: City name (e.g. 'Austin'). Pass zip or city.
+            """
+            _p = {"zip": zip, "city": city}
+            return _run(lambda: client.heb.stores(**{k: v for k, v in _p.items() if v is not None}))
+        tools.append(scavio_heb_stores)
+
+    if enable_kroger:
+        def scavio_kroger_search(query: str, page: Optional[int] = None) -> dict:
+            """Search Kroger grocery products by keyword: price (cents), promo/n-for deals, unit price, UPC, stock, SNAP eligibility, dietary info, rating and category. Kroger operates Kroger, Ralphs, Fred Meyer, Harris Teeter, King Soopers, Fry's and other banners. Costs 2 credits.
+
+            Args:
+                query: Search keywords (1-200 characters).
+                page: Results page, 1-based (1-100).
+            """
+            _p = {"page": page}
+            return _run(lambda: client.kroger.search(query, **{k: v for k, v in _p.items() if v is not None}))
+        tools.append(scavio_kroger_search)
+
+        def scavio_kroger_product(product_url: Optional[str] = None, upc: Optional[str] = None, slug: Optional[str] = None) -> dict:
+            """Full Kroger product detail: nutrition facts with allergens and ingredients, rating distribution, store aisle location, dietary flags (organic, non-GMO, gluten-free), SNAP eligibility, dimensions and country of origin. Pass product_url (from search) or upc. Costs 2 credits.
+
+            Args:
+                product_url: Full or relative product URL from kroger.com (e.g. '/p/kroger-2-reduced-fat-milk-gallon/0001111041700'). Preferred.
+                upc: Kroger product UPC (from search() or product URLs: /p/{slug}/{upc}).
+                slug: Product slug for readable URL. Optional with upc.
+            """
+            _p = {"product_url": product_url, "upc": upc, "slug": slug}
+            return _run(lambda: client.kroger.product(**{k: v for k, v in _p.items() if v is not None}))
+        tools.append(scavio_kroger_product)
 
     if enable_reddit:
         # Reddit moved upstream in 2026-07: 1 credit, not 2. /reddit/search
