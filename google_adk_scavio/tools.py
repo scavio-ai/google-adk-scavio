@@ -79,6 +79,7 @@ def create_scavio_tools(
     enable_walmart: bool = True,
     enable_heb: bool = True,
     enable_kroger: bool = True,
+    enable_decathlon: bool = True,
     enable_reddit: bool = True,
     enable_crawl: bool = False,
 ) -> list:
@@ -95,6 +96,7 @@ def create_scavio_tools(
         enable_walmart: Register the Walmart tools. Defaults to True.
         enable_heb: Register the HEB tools (3). Defaults to True.
         enable_kroger: Register the Kroger tools (2). Defaults to True.
+        enable_decathlon: Register the Decathlon tools (2). Defaults to True.
         enable_reddit: Register the Reddit tools. Defaults to True.
         enable_crawl: Register the 5 website tools (map, crawl, crawl status,
             batch extract, batch status). OPT-IN, defaults to False, because a
@@ -341,6 +343,31 @@ def create_scavio_tools(
             _p = {"product_url": product_url, "upc": upc, "slug": slug}
             return _run(lambda: client.kroger.product(**{k: v for k, v in _p.items() if v is not None}))
         tools.append(scavio_kroger_product)
+
+    if enable_decathlon:
+        def scavio_decathlon_search(query: str, country: str, page: Optional[int] = None) -> dict:
+            """Search Decathlon products by keyword across 7 country domains (FR, ES, IT, IN, UK, PT, NET). Returns product name, brand, price (cents), currency, availability, rating, review count and image. Costs 2 credits.
+
+            Args:
+                query: Search keywords (1-200 characters).
+                country: Country domain: 'fr', 'es', 'it', 'in', 'uk', 'pt' or 'net'.
+                page: Results page, 1-based (1-50).
+            """
+            _p = {"page": page}
+            return _run(lambda: client.decathlon.search(query, country=country, **{k: v for k, v in _p.items() if v is not None}))
+        tools.append(scavio_decathlon_search)
+
+        def scavio_decathlon_product(country: str, product_url: Optional[str] = None, product_id: Optional[str] = None) -> dict:
+            """Full Decathlon product detail by URL or product ID: description, images, SKU, GTIN, color, price (cents), list price, availability, offers/variants, rating, review count, category and breadcrumbs. Pass product_url (from search) or product_id. Costs 2 credits.
+
+            Args:
+                country: Country domain: 'fr', 'es', 'it', 'in', 'uk', 'pt' or 'net'.
+                product_url: Full or relative product URL from any Decathlon domain. Preferred.
+                product_id: Decathlon numeric product ID.
+            """
+            _p = {"product_url": product_url, "product_id": product_id}
+            return _run(lambda: client.decathlon.product(country=country, **{k: v for k, v in _p.items() if v is not None}))
+        tools.append(scavio_decathlon_product)
 
     if enable_reddit:
         # Reddit moved upstream in 2026-07: 1 credit, not 2. /reddit/search
