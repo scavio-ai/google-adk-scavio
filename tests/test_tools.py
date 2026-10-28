@@ -240,7 +240,7 @@ def test_package_version_matches_pyproject():
 
     pyproject = (pathlib.Path(__file__).resolve().parents[1] / "pyproject.toml").read_text()
     declared = re.search(r'^version = "([^"]+)"', pyproject, re.M).group(1)
-    assert google_adk_scavio.__version__ == declared == "0.4.2"
+    assert google_adk_scavio.__version__ == declared == "0.4.3"
 
 
 def test_adk_function_tool_wraps(monkeypatch):
@@ -409,3 +409,17 @@ def test_crawl_tools_wrap_as_adk_function_tools_and_state_prices(monkeypatch):
         assert "credit" in doc, name
         for word in ("proxy", "residential", "datacenter", "headless", "browser"):
             assert word not in doc, (name, word)
+
+
+def test_heb_store_id_is_forwarded(monkeypatch):
+    class _HebClient(_FakeClient):
+        def __init__(self, *args, **kwargs):
+            super().__init__()
+            self.heb = _Recorder(self.calls)
+
+    monkeypatch.setattr(tools_mod, "ScavioClient", _HebClient)
+    tools = create_scavio_tools(api_key="test", enable_heb=True)
+    out = _get(tools, "scavio_heb_search")("milk", store_id="441")
+    assert (out["method"], out["args"], out["kwargs"]) == ("search", ("milk",), {"store_id": "441"})
+    out = _get(tools, "scavio_heb_product")(product_id="314130", store_id="441")
+    assert (out["method"], out["kwargs"]) == ("product", {"product_id": "314130", "store_id": "441"})

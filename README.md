@@ -99,6 +99,8 @@ website tools.
 | `scavio_batch_extract` | Extract a list of URLs in one job *(`enable_crawl`)* | 1 / 1 / 2 per successful page by `mode` |
 | `scavio_batch_status` | A batch's progress and page results, cursor-paged *(`enable_crawl`)* | free |
 
+HEB store pricing: `scavio_heb_search` and `scavio_heb_product` take an optional `store_id` (the `store_number` from `scavio_heb_stores`) for that store's prices, stock and aisle location; the store used comes back in `data.store`. With `store_id`, `scavio_heb_product` needs only `product_id`.
+
 ### Reading a page
 
 `scavio_extract` is the one tool here that is not tied to a platform: give it any
